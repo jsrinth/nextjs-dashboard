@@ -5,7 +5,7 @@ import postgres from 'postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { createClient } from '../utils/supabase/client';
+// import { createClient } from '../utils/supabase/client';
 
 const FormSchema = z.object({
     id: z.string(),
@@ -19,7 +19,7 @@ const CreateInvoice = FormSchema.omit({ id: true, date: true });
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
 export async function createInvoice(formData: FormData) {
-    const supabase = await createClient()
+    // const supabase = await createClient()
     const { customerId, amount, status } = CreateInvoice.parse({
         customerId: formData.get('customerId'),
         amount: formData.get('amount'),
