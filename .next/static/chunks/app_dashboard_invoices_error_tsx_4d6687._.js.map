@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 7, "column": 0}, "map": {"version":3,"sources":["file:///Users/samanthateo/Documents/GitHub/nextjs-dashboard/app/dashboard/invoices/error.tsx"],"sourcesContent":["\"use client\";\nimport { useEffect } from \"react\";\n\nexport default function Error({\n    error,\n    reset,\n}: {\n    error: Error & { digest?: string };\n    reset: () => void;\n}) {\n    useEffect(() => {\n        console.error(error);\n    }, [error]);\n\n    return (\n        <main className=\"flex h-full flex-col items-center justify-center\">\n            <h2 className=\"text-center\">Something went wrong!</h2>\n            <button\n                className=\"mt-4 rounded-md bg-blue-500 px-4 py-2 text-sm text-white transsition-colors hover:bg-blue-400\"\n                onClick={() => reset()}\n            >\n                Try again\n            </button>\n        </main>\n    );\n}\n"],"names":[],"mappings":";;;;AACA;;;AADA;;AAGe,SAAS,MAAM,EAC1B,KAAK,EACL,KAAK,EAIR;;IACG,CAAA,GAAA,4RAAA,CAAA,YAAS,AAAD;2BAAE;YACN,QAAQ,KAAK,CAAC;QAClB;0BAAG;QAAC;KAAM;IAEV,qBACI,4TAAC;QAAK,WAAU;;0BACZ,4TAAC;gBAAG,WAAU;0BAAc;;;;;;0BAC5B,4TAAC;gBACG,WAAU;gBACV,SAAS,IAAM;0BAClB;;;;;;;;;;;;AAKb;GAtBwB;KAAA"}},
+    {"offset": {"line": 59, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}}]
+}
