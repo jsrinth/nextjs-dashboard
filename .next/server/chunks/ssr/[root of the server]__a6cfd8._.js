@@ -137,7 +137,7 @@ module.exports = mod;
 
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, x: __turbopack_external_require__, y: __turbopack_external_import__, z: __turbopack_require_stub__ } = __turbopack_context__;
 {
-/* __next_internal_action_entry_do_not_use__ {"40344e743686735202b1d7d8cdb5a2ba161e7f837f":"createInvoice","40fdda32d133c9013289279e5c6922829d9811e4ab":"deleteInvoice","609f9b112f9b8e50a0388c8a6e4f075faaa288ec94":"updateInvoice"} */ __turbopack_esm__({
+/* __next_internal_action_entry_do_not_use__ {"40fdda32d133c9013289279e5c6922829d9811e4ab":"deleteInvoice","60344e743686735202b1d7d8cdb5a2ba161e7f837f":"createInvoice","609f9b112f9b8e50a0388c8a6e4f075faaa288ec94":"updateInvoice"} */ __turbopack_esm__({
     "createInvoice": (()=>createInvoice),
     "deleteInvoice": (()=>deleteInvoice),
     "updateInvoice": (()=>updateInvoice)
@@ -159,12 +159,18 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$ne
 // import { createClient } from '../utils/supabase/client';
 const FormSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$24$2e$1$2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].object({
     id: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$24$2e$1$2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].string(),
-    customerId: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$24$2e$1$2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].string(),
-    amount: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$24$2e$1$2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].coerce.number(),
+    customerId: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$24$2e$1$2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].string({
+        invalid_type_error: "Please select a customer."
+    }),
+    amount: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$24$2e$1$2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].coerce.number().gt(0, {
+        message: "Please enter an amount greater than $0"
+    }),
     status: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$24$2e$1$2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].enum([
         'pending',
         'paid'
-    ]),
+    ], {
+        invalid_type_error: "Please select an invoice status"
+    }),
     date: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$24$2e$1$2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].string()
 });
 const CreateInvoice = FormSchema.omit({
@@ -178,19 +184,27 @@ const UpdateInvoice = FormSchema.omit({
 const sql = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$postgres$40$3$2e$4$2e$5$2f$node_modules$2f$postgres$2f$src$2f$index$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"])(process.env.POSTGRES_URL, {
     ssl: 'require'
 });
-async function /*#__TURBOPACK_DISABLE_EXPORT_MERGING__*/ createInvoice(formData) {
+async function /*#__TURBOPACK_DISABLE_EXPORT_MERGING__*/ createInvoice(prevState, formData) {
     // const supabase = await createClient()
-    const { customerId, amount, status } = CreateInvoice.parse({
+    const validatedFields = CreateInvoice.safeParse({
         customerId: formData.get('customerId'),
         amount: formData.get('amount'),
         status: formData.get('status')
     });
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: "Missing Fields. Failed to create Invoice."
+        };
+    }
+    // const amountInCents = amount*100
+    const { customerId, amount, status } = validatedFields.data;
     const amountInCents = amount * 100;
     const date = new Date().toISOString().split('T')[0];
     try {
         await sql`INSERT INTO invoices (customer_id, amount, status, date) VALUES (${customerId}, ${amountInCents}, ${status}, ${date})`;
     } catch (error) {
-        console.log(error);
+        message: "Database error: Failed to create invoice.";
     }
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$cache$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["revalidatePath"])('/dashboard/invoices');
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["redirect"])('/dashboard/invoices');
@@ -205,7 +219,9 @@ async function /*#__TURBOPACK_DISABLE_EXPORT_MERGING__*/ updateInvoice(id, formD
     try {
         await sql`UPDATE invoices SET customer_id = ${customerId}, amount = ${amountInCents}, status=${status} WHERE id=${id}`;
     } catch (error) {
-        console.log(error);
+    // return (
+    //     message: 'Database Error: Failed to Create Invoice.'
+    // )
     }
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$cache$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["revalidatePath"])('/dashboard/invoices');
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["redirect"])('/dashboard/invoices');
@@ -220,7 +236,7 @@ async function /*#__TURBOPACK_DISABLE_EXPORT_MERGING__*/ deleteInvoice(id) {
     updateInvoice,
     deleteInvoice
 ]);
-(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(createInvoice, "40344e743686735202b1d7d8cdb5a2ba161e7f837f", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(createInvoice, "60344e743686735202b1d7d8cdb5a2ba161e7f837f", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(updateInvoice, "609f9b112f9b8e50a0388c8a6e4f075faaa288ec94", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(deleteInvoice, "40fdda32d133c9013289279e5c6922829d9811e4ab", null);
 }}),
@@ -720,20 +736,20 @@ async function InvoicesTable({ query, currentPage }) {
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/ui/invoices/table.tsx",
                                                                 lineNumber: 29,
-                                                                columnNumber: 23
+                                                                columnNumber: 45
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                                 children: invoice.name
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/ui/invoices/table.tsx",
                                                                 lineNumber: 36,
-                                                                columnNumber: 23
+                                                                columnNumber: 45
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/ui/invoices/table.tsx",
                                                         lineNumber: 28,
-                                                        columnNumber: 21
+                                                        columnNumber: 41
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                         className: "text-sm text-gray-500",
@@ -741,26 +757,26 @@ async function InvoicesTable({ query, currentPage }) {
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/ui/invoices/table.tsx",
                                                         lineNumber: 38,
-                                                        columnNumber: 21
+                                                        columnNumber: 41
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
                                                 lineNumber: 27,
-                                                columnNumber: 19
+                                                columnNumber: 37
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$ui$2f$invoices$2f$status$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"], {
                                                 status: invoice.status
                                             }, void 0, false, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                                lineNumber: 40,
-                                                columnNumber: 19
+                                                lineNumber: 42,
+                                                columnNumber: 37
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/ui/invoices/table.tsx",
                                         lineNumber: 26,
-                                        columnNumber: 17
+                                        columnNumber: 33
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "flex w-full items-center justify-between pt-4",
@@ -772,21 +788,21 @@ async function InvoicesTable({ query, currentPage }) {
                                                         children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$utils$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["formatCurrency"])(invoice.amount)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/ui/invoices/table.tsx",
-                                                        lineNumber: 44,
-                                                        columnNumber: 21
+                                                        lineNumber: 46,
+                                                        columnNumber: 41
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                         children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$utils$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["formatDateToLocal"])(invoice.date)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/ui/invoices/table.tsx",
-                                                        lineNumber: 47,
-                                                        columnNumber: 21
+                                                        lineNumber: 49,
+                                                        columnNumber: 41
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                                lineNumber: 43,
-                                                columnNumber: 19
+                                                lineNumber: 45,
+                                                columnNumber: 37
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                 className: "flex justify-end gap-2",
@@ -795,38 +811,38 @@ async function InvoicesTable({ query, currentPage }) {
                                                         id: invoice.id
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/ui/invoices/table.tsx",
-                                                        lineNumber: 50,
-                                                        columnNumber: 21
+                                                        lineNumber: 52,
+                                                        columnNumber: 41
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$ui$2f$invoices$2f$buttons$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["DeleteInvoice"], {
                                                         id: invoice.id
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/ui/invoices/table.tsx",
-                                                        lineNumber: 51,
-                                                        columnNumber: 21
+                                                        lineNumber: 53,
+                                                        columnNumber: 41
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                                lineNumber: 49,
-                                                columnNumber: 19
+                                                lineNumber: 51,
+                                                columnNumber: 37
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/ui/invoices/table.tsx",
-                                        lineNumber: 42,
-                                        columnNumber: 17
+                                        lineNumber: 44,
+                                        columnNumber: 33
                                     }, this)
                                 ]
                             }, invoice.id, true, {
                                 fileName: "[project]/app/ui/invoices/table.tsx",
                                 lineNumber: 22,
-                                columnNumber: 15
+                                columnNumber: 29
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/app/ui/invoices/table.tsx",
                         lineNumber: 20,
-                        columnNumber: 11
+                        columnNumber: 21
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("table", {
                         className: "hidden min-w-full text-gray-900 md:table",
@@ -841,8 +857,8 @@ async function InvoicesTable({ query, currentPage }) {
                                             children: "Customer"
                                         }, void 0, false, {
                                             fileName: "[project]/app/ui/invoices/table.tsx",
-                                            lineNumber: 60,
-                                            columnNumber: 17
+                                            lineNumber: 62,
+                                            columnNumber: 33
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                             scope: "col",
@@ -850,8 +866,8 @@ async function InvoicesTable({ query, currentPage }) {
                                             children: "Email"
                                         }, void 0, false, {
                                             fileName: "[project]/app/ui/invoices/table.tsx",
-                                            lineNumber: 63,
-                                            columnNumber: 17
+                                            lineNumber: 68,
+                                            columnNumber: 33
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                             scope: "col",
@@ -859,8 +875,8 @@ async function InvoicesTable({ query, currentPage }) {
                                             children: "Amount"
                                         }, void 0, false, {
                                             fileName: "[project]/app/ui/invoices/table.tsx",
-                                            lineNumber: 66,
-                                            columnNumber: 17
+                                            lineNumber: 74,
+                                            columnNumber: 33
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                             scope: "col",
@@ -868,8 +884,8 @@ async function InvoicesTable({ query, currentPage }) {
                                             children: "Date"
                                         }, void 0, false, {
                                             fileName: "[project]/app/ui/invoices/table.tsx",
-                                            lineNumber: 69,
-                                            columnNumber: 17
+                                            lineNumber: 80,
+                                            columnNumber: 33
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                             scope: "col",
@@ -877,8 +893,8 @@ async function InvoicesTable({ query, currentPage }) {
                                             children: "Status"
                                         }, void 0, false, {
                                             fileName: "[project]/app/ui/invoices/table.tsx",
-                                            lineNumber: 72,
-                                            columnNumber: 17
+                                            lineNumber: 86,
+                                            columnNumber: 33
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
                                             scope: "col",
@@ -888,24 +904,24 @@ async function InvoicesTable({ query, currentPage }) {
                                                 children: "Edit"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                                lineNumber: 76,
-                                                columnNumber: 19
+                                                lineNumber: 96,
+                                                columnNumber: 37
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/ui/invoices/table.tsx",
-                                            lineNumber: 75,
-                                            columnNumber: 17
+                                            lineNumber: 92,
+                                            columnNumber: 33
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/ui/invoices/table.tsx",
-                                    lineNumber: 59,
-                                    columnNumber: 15
+                                    lineNumber: 61,
+                                    columnNumber: 29
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                lineNumber: 58,
-                                columnNumber: 13
+                                lineNumber: 60,
+                                columnNumber: 25
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
                                 className: "bg-white",
@@ -925,50 +941,50 @@ async function InvoicesTable({ query, currentPage }) {
                                                             alt: `${invoice.name}'s profile picture`
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/ui/invoices/table.tsx",
-                                                            lineNumber: 88,
-                                                            columnNumber: 23
+                                                            lineNumber: 108,
+                                                            columnNumber: 45
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                             children: invoice.name
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/ui/invoices/table.tsx",
-                                                            lineNumber: 95,
-                                                            columnNumber: 23
+                                                            lineNumber: 115,
+                                                            columnNumber: 45
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/ui/invoices/table.tsx",
-                                                    lineNumber: 87,
-                                                    columnNumber: 21
+                                                    lineNumber: 107,
+                                                    columnNumber: 41
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                                lineNumber: 86,
-                                                columnNumber: 19
+                                                lineNumber: 106,
+                                                columnNumber: 37
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                 className: "whitespace-nowrap px-3 py-3",
                                                 children: invoice.email
                                             }, void 0, false, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                                lineNumber: 98,
-                                                columnNumber: 19
+                                                lineNumber: 118,
+                                                columnNumber: 37
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                 className: "whitespace-nowrap px-3 py-3",
                                                 children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$utils$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["formatCurrency"])(invoice.amount)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                                lineNumber: 101,
-                                                columnNumber: 19
+                                                lineNumber: 121,
+                                                columnNumber: 37
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                 className: "whitespace-nowrap px-3 py-3",
                                                 children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$utils$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["formatDateToLocal"])(invoice.date)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                                lineNumber: 104,
-                                                columnNumber: 19
+                                                lineNumber: 124,
+                                                columnNumber: 37
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                 className: "whitespace-nowrap px-3 py-3",
@@ -976,13 +992,13 @@ async function InvoicesTable({ query, currentPage }) {
                                                     status: invoice.status
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/ui/invoices/table.tsx",
-                                                    lineNumber: 108,
-                                                    columnNumber: 21
+                                                    lineNumber: 128,
+                                                    columnNumber: 41
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                                lineNumber: 107,
-                                                columnNumber: 19
+                                                lineNumber: 127,
+                                                columnNumber: 37
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
                                                 className: "whitespace-nowrap py-3 pl-6 pr-3",
@@ -993,59 +1009,59 @@ async function InvoicesTable({ query, currentPage }) {
                                                             id: invoice.id
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/ui/invoices/table.tsx",
-                                                            lineNumber: 112,
-                                                            columnNumber: 23
+                                                            lineNumber: 134,
+                                                            columnNumber: 45
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$1$2e$6_react$2d$dom$40$19$2e$0$2e$0_react$40$19$2e$0$2e$0_$5f$react$40$19$2e$0$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$ui$2f$invoices$2f$buttons$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["DeleteInvoice"], {
                                                             id: invoice.id
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/ui/invoices/table.tsx",
-                                                            lineNumber: 113,
-                                                            columnNumber: 23
+                                                            lineNumber: 135,
+                                                            columnNumber: 45
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/ui/invoices/table.tsx",
-                                                    lineNumber: 111,
-                                                    columnNumber: 21
+                                                    lineNumber: 133,
+                                                    columnNumber: 41
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                                lineNumber: 110,
-                                                columnNumber: 19
+                                                lineNumber: 132,
+                                                columnNumber: 37
                                             }, this)
                                         ]
                                     }, invoice.id, true, {
                                         fileName: "[project]/app/ui/invoices/table.tsx",
-                                        lineNumber: 82,
-                                        columnNumber: 17
+                                        lineNumber: 102,
+                                        columnNumber: 33
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/app/ui/invoices/table.tsx",
-                                lineNumber: 80,
-                                columnNumber: 13
+                                lineNumber: 100,
+                                columnNumber: 25
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/ui/invoices/table.tsx",
-                        lineNumber: 57,
-                        columnNumber: 11
+                        lineNumber: 59,
+                        columnNumber: 21
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/ui/invoices/table.tsx",
                 lineNumber: 19,
-                columnNumber: 9
+                columnNumber: 17
             }, this)
         }, void 0, false, {
             fileName: "[project]/app/ui/invoices/table.tsx",
             lineNumber: 18,
-            columnNumber: 7
+            columnNumber: 13
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/ui/invoices/table.tsx",
         lineNumber: 17,
-        columnNumber: 5
+        columnNumber: 9
     }, this);
 }
 }}),
@@ -1965,8 +1981,8 @@ var __TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, x: __turbopack_external_require__, y: __turbopack_external_import__, t: __turbopack_require_real__ } = __turbopack_context__;
 {
 __turbopack_esm__({
-    "40344e743686735202b1d7d8cdb5a2ba161e7f837f": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createInvoice"]),
     "40fdda32d133c9013289279e5c6922829d9811e4ab": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["deleteInvoice"]),
+    "60344e743686735202b1d7d8cdb5a2ba161e7f837f": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createInvoice"]),
     "609f9b112f9b8e50a0388c8a6e4f075faaa288ec94": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["updateInvoice"])
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/app/lib/actions.ts [app-rsc] (ecmascript)");
@@ -1978,8 +1994,8 @@ var __TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, x: __turbopack_external_require__, y: __turbopack_external_import__, t: __turbopack_require_real__ } = __turbopack_context__;
 {
 __turbopack_esm__({
-    "40344e743686735202b1d7d8cdb5a2ba161e7f837f": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$dashboard$2f$invoices$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$app$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$exports$3e$__["40344e743686735202b1d7d8cdb5a2ba161e7f837f"]),
     "40fdda32d133c9013289279e5c6922829d9811e4ab": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$dashboard$2f$invoices$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$app$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$exports$3e$__["40fdda32d133c9013289279e5c6922829d9811e4ab"]),
+    "60344e743686735202b1d7d8cdb5a2ba161e7f837f": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$dashboard$2f$invoices$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$app$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$exports$3e$__["60344e743686735202b1d7d8cdb5a2ba161e7f837f"]),
     "609f9b112f9b8e50a0388c8a6e4f075faaa288ec94": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$dashboard$2f$invoices$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$app$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$exports$3e$__["609f9b112f9b8e50a0388c8a6e4f075faaa288ec94"])
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$dashboard$2f$invoices$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$app$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$module__evaluation$3e$__ = __turbopack_import__('[project]/.next-internal/server/app/dashboard/invoices/page/actions.js { ACTIONS_MODULE0 => "[project]/app/lib/actions.ts [app-rsc] (ecmascript)" } [app-rsc] (ecmascript) <module evaluation>');

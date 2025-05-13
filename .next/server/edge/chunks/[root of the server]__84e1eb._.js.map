@@ -1,0 +1,9 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 23, "column": 0}, "map": {"version":3,"sources":["turbopack://[project]/auth.config.ts"],"sourcesContent":["import type { NextAuthConfig } from 'next-auth'\n\nexport const authConfig = {\n\tpages: {\n\t\tsignIn: '/login',\n\t},\n\tcallbacks: {\n\t\tauthorized({ auth, request: {nextUrl} }) {\n\t\t\tconst isLoggedIn = !!auth?.user\n\t\t\tconst isOnDashboard = nextUrl.pathname.startsWith('/dashboard')\n\n\t\t\tif (isOnDashboard) {\n\t\t\t\tif(isLoggedIn) return true\n\t\t\t\treturn false\n\t\t\t} else if (isLoggedIn) {\n\t\t\t\treturn Response.redirect(new URL('/dashboard', nextUrl))\n\t\t\t}\n\t\t\treturn true\n\t\t}\n\t},\n\tproviders: []\n} satisfies NextAuthConfig;"],"names":[],"mappings":";;;AAEO,MAAM,aAAa;IACzB,OAAO;QACN,QAAQ;IACT;IACA,WAAW;QACV,YAAW,EAAE,IAAI,EAAE,SAAS,EAAC,OAAO,EAAC,EAAE;YACtC,MAAM,aAAa,CAAC,CAAC,MAAM;YAC3B,MAAM,gBAAgB,QAAQ,QAAQ,CAAC,UAAU,CAAC;YAElD,IAAI,eAAe;gBAClB,IAAG,YAAY,OAAO;gBACtB,OAAO;YACR,OAAO,IAAI,YAAY;gBACtB,OAAO,SAAS,QAAQ,CAAC,IAAI,IAAI,cAAc;YAChD;YACA,OAAO;QACR;IACD;IACA,WAAW,EAAE;AACd"}},
+    {"offset": {"line": 45, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}},
+    {"offset": {"line": 51, "column": 0}, "map": {"version":3,"sources":["turbopack://[project]/middleware.ts"],"sourcesContent":["import NextAuth from \"next-auth\";\nimport { authConfig } from \"./auth.config\";\n\nexport default NextAuth(authConfig).auth;\n\nexport const config = {\n    matcher: ['/((?!api|_next/static|_next/image|.*\\\\.png$).*)']\n}\n"],"names":[],"mappings":";;;;AAAA;AACA;AADA;;;uCAGe,CAAA,GAAA,wVAAA,CAAA,UAAQ,AAAD,EAAE,8GAAA,CAAA,aAAU,EAAE,IAAI;AAEjC,MAAM,SAAS;IAClB,SAAS;QAAC;KAAkD;AAChE"}},
+    {"offset": {"line": 66, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}}]
+}
